@@ -21,6 +21,7 @@ except ImportError:
 
 try:
     import PIL.Image
+
     try:
         _resample = PIL.Image.Resampling.LANCZOS
     except AttributeError:
@@ -29,33 +30,33 @@ except ImportError:
     PIL = None
 
 
-__version__ = '1.4'
+__version__ = "1.4"
 
 IS_PY3 = sys.version_info.major >= 3
 
 
-def _get_grays_pil(image, width, height, fill_color='white'):
-    if image.mode in ('RGBA', 'LA') and fill_color is not None:
+def _get_grays_pil(image, width, height, fill_color="white"):
+    if image.mode in ("RGBA", "LA") and fill_color is not None:
         cleaned = PIL.Image.new(image.mode[:-1], image.size, fill_color)
         cleaned.paste(image, image.split()[-1])
         image = cleaned
 
-    image = image.convert('L')
+    image = image.convert("L")
     image = image.resize((width, height), _resample)
 
     return list(image.getdata())
 
 
-def _get_grays_wand(image, width, height, fill_color='white'):
+def _get_grays_wand(image, width, height, fill_color="white"):
     # we don't want to mutate the caller's image
     with image.clone() as clone:
         if clone.alpha_channel and fill_color is not None:
             clone.background_color = wand.color.Color(fill_color)
-            clone.alpha_channel = 'background'
+            clone.alpha_channel = "background"
 
         clone.resize(width, height)
 
-        blob = clone.make_blob(format='GRAY')
+        blob = clone.make_blob(format="GRAY")
 
     if IS_PY3:
         return list(blob)
@@ -63,7 +64,7 @@ def _get_grays_wand(image, width, height, fill_color='white'):
     return [ord(c) for c in blob]
 
 
-def get_grays(image, width, height, fill_color='white'):
+def get_grays(image, width, height, fill_color="white"):
     """Convert image to grayscale, downsize to width*height, and return list
     of grayscale integer pixel values (for example, 0 to 255).
 
@@ -73,19 +74,23 @@ def get_grays(image, width, height, fill_color='white'):
     if isinstance(image, (tuple, list)):
         if len(image) != width * height:
             raise ValueError(
-                'image sequence length ({}) not equal to width*height ({})'.format(
-                    len(image), width * height))
+                "image sequence length ({}) not equal to width*height ({})".format(
+                    len(image), width * height
+                )
+            )
         return image
 
     if wand is None and PIL is None:
-        raise ImportError('must have wand or Pillow/PIL installed to use dhash on images')
+        raise ImportError(
+            "must have wand or Pillow/PIL installed to use dhash on images"
+        )
 
     if wand is not None and isinstance(image, wand.image.Image):
         return _get_grays_wand(image, width, height, fill_color)
     elif PIL is not None and isinstance(image, PIL.Image.Image):
         return _get_grays_pil(image, width, height, fill_color)
     else:
-        raise ValueError('image must be a wand.image.Image or PIL.Image instance')
+        raise ValueError("image must be a wand.image.Image or PIL.Image instance")
 
 
 def dhash_row_col(image, size=8):
@@ -140,7 +145,7 @@ def get_num_bits_different(hash1, hash2):
     >>> get_num_bits_different(0x0000, 0xffff)
     16
     """
-    return bin(hash1 ^ hash2).count('1')
+    return bin(hash1 ^ hash2).count("1")
 
 
 def format_bytes(row_hash, col_hash, size=8):
@@ -162,9 +167,9 @@ def format_bytes(row_hash, col_hash, size=8):
     bits_per_hash = size * size
     full_hash = row_hash << bits_per_hash | col_hash
     if IS_PY3:
-        return full_hash.to_bytes(bits_per_hash // 4, 'big')
+        return full_hash.to_bytes(bits_per_hash // 4, "big")
     else:
-        return '{0:0{1}x}'.format(full_hash, bits_per_hash // 2).decode('hex')
+        return "{0:0{1}x}".format(full_hash, bits_per_hash // 2).decode("hex")
 
 
 def format_hex(row_hash, col_hash, size=8):
@@ -177,10 +182,10 @@ def format_hex(row_hash, col_hash, size=8):
     '00010002'
     """
     hex_length = size * size // 4
-    return '{0:0{2}x}{1:0{2}x}'.format(row_hash, col_hash, hex_length)
+    return "{0:0{2}x}{1:0{2}x}".format(row_hash, col_hash, hex_length)
 
 
-def format_matrix(hash_int, bits='01', size=8):
+def format_matrix(hash_int, bits="01", size=8):
     """Format dhash integer as matrix of bits.
 
     >>> row, col = dhash_row_col([0,0,1,1,1, 0,1,1,3,4, 0,1,6,6,7, 7,7,7,7,9, 8,7,7,8,9], size=4)
@@ -195,15 +200,17 @@ def format_matrix(hash_int, bits='01', size=8):
     1111
     1001
     """
-    output = '{:0{}b}'.format(hash_int, size * size)
+    output = "{:0{}b}".format(hash_int, size * size)
     if IS_PY3:
-        output = output.translate({ord('0'): bits[0], ord('1'): bits[1]})
+        output = output.translate({ord("0"): bits[0], ord("1"): bits[1]})
     else:
-        output = unicode(output).translate({ord('0'): unicode(bits[0]), ord('1'): unicode(bits[1])})
+        output = unicode(output).translate(
+            {ord("0"): unicode(bits[0]), ord("1"): unicode(bits[1])}
+        )
         output = type(bits[0])(output)
     width = size * len(bits[0])
-    lines = [output[i:i + width] for i in range(0, size * width, width)]
-    return '\n'.join(lines)
+    lines = [output[i : i + width] for i in range(0, size * width, width)]
+    return "\n".join(lines)
 
 
 def format_grays(grays, size=8):
@@ -224,38 +231,55 @@ def format_grays(grays, size=8):
         line = []
         for x in range(width):
             gray = grays[y * width + x]
-            line.append(format(gray, '4'))
-        lines.append(''.join(line))
-    return '\n'.join(lines)
+            line.append(format(gray, "4"))
+        lines.append("".join(line))
+    return "\n".join(lines)
 
 
 def force_pil():
     """If both wand and Pillow/PIL are installed, force the use of Pillow/PIL."""
     global wand
     if PIL is None:
-        raise ValueError('Pillow/PIL library must be installed to use force_pil()')
+        raise ValueError("Pillow/PIL library must be installed to use force_pil()")
     wand = None
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--size', type=int, default=8,
-                        help='width and height of dhash image size, default %(default)d')
-    parser.add_argument('-f', '--format', default='hex', choices=['hex', 'decimal', 'matrix', 'grays'],
-                        help='hash output format, default %(default)s')
-    parser.add_argument('-p', '--pil', action='store_true',
-                        help='if both wand and Pillow/PIL installed, force use of Pillow/PIL')
-    parser.add_argument('filename', nargs='*',
-                        help='name of image file to hash (or two to calculate the delta)')
+    parser.add_argument(
+        "-s",
+        "--size",
+        type=int,
+        default=8,
+        help="width and height of dhash image size, default %(default)d",
+    )
+    parser.add_argument(
+        "-f",
+        "--format",
+        default="hex",
+        choices=["hex", "decimal", "matrix", "grays"],
+        help="hash output format, default %(default)s",
+    )
+    parser.add_argument(
+        "-p",
+        "--pil",
+        action="store_true",
+        help="if both wand and Pillow/PIL installed, force use of Pillow/PIL",
+    )
+    parser.add_argument(
+        "filename",
+        nargs="*",
+        help="name of image file to hash (or two to calculate the delta)",
+    )
     args = parser.parse_args()
 
     if args.pil:
         try:
             force_pil()
         except ValueError:
-            sys.stderr.write('You must have Pillow/PIL installed to use --pil\n')
+            sys.stderr.write("You must have Pillow/PIL installed to use --pil\n")
             sys.exit(1)
 
     def load_image(filename):
@@ -264,29 +288,32 @@ if __name__ == '__main__':
         elif PIL is not None:
             return PIL.Image.open(filename)
         else:
-            sys.stderr.write('You must have wand or Pillow/PIL installed to use the dhash command\n')
+            sys.stderr.write(
+                "You must have wand or Pillow/PIL installed to use the dhash command\n"
+            )
             sys.exit(1)
 
     if len(args.filename) == 0:
         # NOTE: doctests require "wand" to be installed
         import doctest
+
         failure_count, _ = doctest.testmod()
         if failure_count:
             sys.exit(1)
 
     elif len(args.filename) == 1:
         image = load_image(args.filename[0])
-        if args.format == 'grays':
+        if args.format == "grays":
             grays = get_grays(image, args.size + 1, args.size + 1)
             print(format_grays(grays, size=args.size))
         else:
             row_hash, col_hash = dhash_row_col(image, size=args.size)
-            if args.format == 'hex':
+            if args.format == "hex":
                 print(format_hex(row_hash, col_hash, size=args.size))
-            elif args.format == 'decimal':
+            elif args.format == "decimal":
                 print(row_hash, col_hash)
             else:
-                bits = ['. ', '* ']
+                bits = [". ", "* "]
                 print(format_matrix(row_hash, bits=bits, size=args.size))
                 print()
                 print(format_matrix(col_hash, bits=bits, size=args.size))
@@ -297,11 +324,14 @@ if __name__ == '__main__':
         hash1 = dhash_int(image1, size=args.size)
         hash2 = dhash_int(image2, size=args.size)
         num_bits_different = get_num_bits_different(hash1, hash2)
-        print('{} {} out of {} ({:.1f}%)'.format(
+        print(
+            "{} {} out of {} ({:.1f}%)".format(
                 num_bits_different,
-                'bit differs' if num_bits_different == 1 else 'bits differ',
+                "bit differs" if num_bits_different == 1 else "bits differ",
                 args.size * args.size * 2,
-                100 * num_bits_different / (args.size * args.size * 2)))
+                100 * num_bits_different / (args.size * args.size * 2),
+            )
+        )
 
     else:
-        parser.error('You must specify one or two filenames')
+        parser.error("You must specify one or two filenames")
