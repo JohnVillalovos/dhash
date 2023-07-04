@@ -6,15 +6,9 @@ import sys
 
 from setuptools import setup
 
-# Read files as byte strings on Python 2.x, unicode strings on 3.x
-if sys.version_info < (3, 0):
-    open_args = {}
-else:
-    open_args = {"encoding": "utf-8"}
-
-
 # Because it's best not to import the module in setup.py
-with open(os.path.join(os.path.dirname(__file__), "dhash.py"), **open_args) as f:
+with open(os.path.join(os.path.dirname(__file__), "dhash.py"), encoding="utf-8") as f:
+    # with open(os.path.join(os.path.dirname(__file__), "dhash.py"), **open_args) as f:
     for line in f:
         match = re.match(r"__version__.*'([0-9.]+)'", line)
         if match:
@@ -25,7 +19,7 @@ with open(os.path.join(os.path.dirname(__file__), "dhash.py"), **open_args) as f
 
 
 # Read long_description from README.rst
-with open(os.path.join(os.path.dirname(__file__), "README.rst"), **open_args) as f:
+with open(os.path.join(os.path.dirname(__file__), "README.rst"), encoding="utf-8") as f:
     long_description = f.read()
 
 
@@ -36,7 +30,10 @@ setup(
     author_email="benhoyt@gmail.com",
     url="https://github.com/benhoyt/dhash",
     license="MIT License",
-    description="Calculate difference hash (perceptual hash) for a given image, useful for detecting duplicates",
+    description=(
+        "Calculate difference hash (perceptual hash) for a given image, useful for "
+        "detecting duplicates"
+    ),
     long_description=long_description,
     py_modules=["dhash"],
     python_requires=">=3.7.0",
