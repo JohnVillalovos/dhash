@@ -34,8 +34,6 @@ except ImportError:
 
 __version__ = "1.4"
 
-IS_PY3 = sys.version_info.major >= 3
-
 
 def _get_grays_pil(image, width, height, fill_color="white"):
     if image.mode in ("RGBA", "LA") and fill_color is not None:
@@ -60,10 +58,7 @@ def _get_grays_wand(image, width, height, fill_color="white"):
 
         blob = clone.make_blob(format="GRAY")
 
-    if IS_PY3:
-        return list(blob)
-
-    return [ord(c) for c in blob]
+    return list(blob)
 
 
 def get_grays(image, width, height, fill_color="white"):
@@ -157,21 +152,18 @@ def format_bytes(row_hash, col_hash, size=8):
     >>> hash_bytes = format_bytes(19409, 14959, size=4)
     >>> type(hash_bytes) is bytes
     True
-    >>> [hex(b) for b in hash_bytes] if IS_PY3 else [hex(ord(b)) for b in hash_bytes]
+    >>> [hex(b) for b in hash_bytes]
     ['0x4b', '0xd1', '0x3a', '0x6f']
 
     >>> hash_bytes = format_bytes(1, 2, size=4)
     >>> type(hash_bytes) is bytes
     True
-    >>> [hex(b) for b in hash_bytes] if IS_PY3 else [hex(ord(b)) for b in hash_bytes]
+    >>> [hex(b) for b in hash_bytes]
     ['0x0', '0x1', '0x0', '0x2']
     """
     bits_per_hash = size * size
     full_hash = row_hash << bits_per_hash | col_hash
-    if IS_PY3:
-        return full_hash.to_bytes(bits_per_hash // 4, "big")
-    else:
-        return "{0:0{1}x}".format(full_hash, bits_per_hash // 2).decode("hex")
+    return full_hash.to_bytes(bits_per_hash // 4, "big")
 
 
 def format_hex(row_hash, col_hash, size=8):
@@ -203,13 +195,7 @@ def format_matrix(hash_int, bits="01", size=8):
     1001
     """
     output = "{:0{}b}".format(hash_int, size * size)
-    if IS_PY3:
-        output = output.translate({ord("0"): bits[0], ord("1"): bits[1]})
-    else:
-        output = unicode(output).translate(
-            {ord("0"): unicode(bits[0]), ord("1"): unicode(bits[1])}
-        )
-        output = type(bits[0])(output)
+    output = output.translate({ord("0"): bits[0], ord("1"): bits[1]})
     width = size * len(bits[0])
     lines = [output[i : i + width] for i in range(0, size * width, width)]
     return "\n".join(lines)
