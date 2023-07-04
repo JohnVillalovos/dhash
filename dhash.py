@@ -19,16 +19,18 @@ try:
 except ImportError:
     wand = None
 
+PIL_IMPORTED = False
 try:
     import PIL.Image
+
+    PIL_IMPORTED = True
 
     try:
         _resample = PIL.Image.Resampling.LANCZOS
     except AttributeError:
         _resample = PIL.Image.ANTIALIAS
 except ImportError:
-    PIL = None
-
+    ...
 
 __version__ = "1.4"
 
@@ -80,14 +82,14 @@ def get_grays(image, width, height, fill_color="white"):
             )
         return image
 
-    if wand is None and PIL is None:
+    if wand is None and not PIL_IMPORTED:
         raise ImportError(
             "must have wand or Pillow/PIL installed to use dhash on images"
         )
 
     if wand is not None and isinstance(image, wand.image.Image):
         return _get_grays_wand(image, width, height, fill_color)
-    elif PIL is not None and isinstance(image, PIL.Image.Image):
+    elif PIL_IMPORTED and isinstance(image, PIL.Image.Image):
         return _get_grays_pil(image, width, height, fill_color)
     else:
         raise ValueError("image must be a wand.image.Image or PIL.Image instance")
@@ -239,7 +241,7 @@ def format_grays(grays, size=8):
 def force_pil():
     """If both wand and Pillow/PIL are installed, force the use of Pillow/PIL."""
     global wand
-    if PIL is None:
+    if not PIL_IMPORTED:
         raise ValueError("Pillow/PIL library must be installed to use force_pil()")
     wand = None
 
@@ -285,7 +287,7 @@ if __name__ == "__main__":
     def load_image(filename):
         if wand is not None:
             return wand.image.Image(filename=filename)
-        elif PIL is not None:
+        elif PIL_IMPORTED:
             return PIL.Image.open(filename)
         else:
             sys.stderr.write(
