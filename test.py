@@ -49,16 +49,11 @@ class TestDHash(TestCase):
         # replace most of it with "transparent black"
         PilDraw.Draw(im2).rectangle((10, 10, 90, 90), (0, 0))
 
-        # delta=n means difference <= n
-        self.assertAlmostEqual(
-            dhash.dhash_row_col(im1), dhash.dhash_row_col(im2), delta=1
-        )
+        self.assertEqual(dhash.dhash_row_col(im1), dhash.dhash_row_col(im2))
 
         # same with Wand version of images
         pm1, pm2 = pil_to_wand(im1), pil_to_wand(im2)
-        self.assertAlmostEqual(
-            dhash.dhash_row_col(pm1), dhash.dhash_row_col(pm2), delta=1
-        )
+        self.assertEqual(dhash.dhash_row_col(pm1), dhash.dhash_row_col(pm2))
 
 
 if __name__ == "__main__":
