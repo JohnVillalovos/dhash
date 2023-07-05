@@ -8,14 +8,13 @@ The dhash project lives on GitHub here:
 https://github.com/benhoyt/dhash
 """
 
-from __future__ import division
-
 import sys
+from typing import Any, List, Sequence, Tuple, Union
 
 # Allow library to be imported even if neither wand or PIL are installed
 try:
-    import wand.color
-    import wand.image
+    import wand.color  # type: ignore[import]
+    import wand.image  # type: ignore[import]
 except ImportError:
     wand = None
 
@@ -35,10 +34,12 @@ except ImportError:
 __version__ = "1.4"
 
 
-def _get_grays_pil(image, width, height, fill_color="white"):
+def _get_grays_pil(
+    image: PIL.Image.Image, width: int, height: int, fill_color: str = "white"
+) -> List[Any]:
     if image.mode in ("RGBA", "LA") and fill_color is not None:
         cleaned = PIL.Image.new(image.mode[:-1], image.size, fill_color)
-        cleaned.paste(image, image.split()[-1])
+        cleaned.paste(image, mask=image.split()[-1])
         image = cleaned
 
     image = image.convert("L")
@@ -47,7 +48,9 @@ def _get_grays_pil(image, width, height, fill_color="white"):
     return list(image.getdata())
 
 
-def _get_grays_wand(image, width, height, fill_color="white"):
+def _get_grays_wand(
+    image: "wand.image.Image", width: int, height: int, fill_color: str = "white"
+) -> List[Any]:
     # we don't want to mutate the caller's image
     with image.clone() as clone:
         if clone.alpha_channel and fill_color is not None:
@@ -61,7 +64,12 @@ def _get_grays_wand(image, width, height, fill_color="white"):
     return list(blob)
 
 
-def get_grays(image, width, height, fill_color="white"):
+def get_grays(
+    image: Union["PIL.Image.Image", "wand.image.Image", Sequence[int]],
+    width: int,
+    height: int,
+    fill_color: str = "white",
+) -> Sequence[Any]:
     """Convert image to grayscale, downsize to width*height, and return list
     of grayscale integer pixel values (for example, 0 to 255).
 
@@ -90,7 +98,9 @@ def get_grays(image, width, height, fill_color="white"):
         raise ValueError("image must be a wand.image.Image or PIL.Image instance")
 
 
-def dhash_row_col(image, size=8):
+def dhash_row_col(
+    image: Union[PIL.Image.Image, Sequence[int]], size: int = 8
+) -> Tuple[int, int]:
     """Calculate row and column difference hash for given image and return
     hashes as (row_hash, col_hash) where each value is a size*size bit
     integer.
@@ -119,7 +129,7 @@ def dhash_row_col(image, size=8):
     return (row_hash, col_hash)
 
 
-def dhash_int(image, size=8):
+def dhash_int(image: Union[PIL.Image.Image, Sequence[int]], size: int = 8) -> int:
     """Calculate row and column difference hash for given image and return
     hashes combined as a single 2*size*size bit integer (row_hash in most
     significant bits, col_hash in least).
@@ -132,7 +142,7 @@ def dhash_int(image, size=8):
     return row_hash << (size * size) | col_hash
 
 
-def get_num_bits_different(hash1, hash2):
+def get_num_bits_different(hash1: int, hash2: int) -> int:
     """Calculate number of bits different between two hashes.
 
     >>> get_num_bits_different(0x4bd1, 0x4bd1)
@@ -145,7 +155,7 @@ def get_num_bits_different(hash1, hash2):
     return bin(hash1 ^ hash2).count("1")
 
 
-def format_bytes(row_hash, col_hash, size=8):
+def format_bytes(row_hash: int, col_hash: int, size: int = 8) -> bytes:
     """Format dhash integers as binary string of size*size//8 bytes (row_hash
     and col_hash concatenated, big endian).
 
@@ -166,7 +176,7 @@ def format_bytes(row_hash, col_hash, size=8):
     return full_hash.to_bytes(bits_per_hash // 4, "big")
 
 
-def format_hex(row_hash, col_hash, size=8):
+def format_hex(row_hash: int, col_hash: int, size: int = 8) -> str:
     """Format dhash integers as hex string of size*size//2 total hex digits
     (row_hash and col_hash concatenated).
 
@@ -179,7 +189,7 @@ def format_hex(row_hash, col_hash, size=8):
     return "{0:0{2}x}{1:0{2}x}".format(row_hash, col_hash, hex_length)
 
 
-def format_matrix(hash_int, bits="01", size=8):
+def format_matrix(hash_int: int, bits: Sequence[str] = "01", size: int = 8) -> str:
     """Format dhash integer as matrix of bits.
 
     >>> row, col = dhash_row_col([0,0,1,1,1, 0,1,1,3,4, 0,1,6,6,7, 7,7,7,7,9, 8,7,7,8,9], size=4)
@@ -201,7 +211,7 @@ def format_matrix(hash_int, bits="01", size=8):
     return "\n".join(lines)
 
 
-def format_grays(grays, size=8):
+def format_grays(grays: Sequence[int], size: int = 8) -> str:
     r"""Format grays list as matrix of gray values.
 
     >>> image = [0,0,1,1,1, 0,1,1,3,4, 0,1,6,6,7, 7,7,7,7,9, 8,7,7,8,9]
@@ -224,7 +234,7 @@ def format_grays(grays, size=8):
     return "\n".join(lines)
 
 
-def force_pil():
+def force_pil() -> None:
     """If both wand and Pillow/PIL are installed, force the use of Pillow/PIL."""
     global wand
     if not PIL_IMPORTED:
@@ -270,7 +280,7 @@ if __name__ == "__main__":
             sys.stderr.write("You must have Pillow/PIL installed to use --pil\n")
             sys.exit(1)
 
-    def load_image(filename):
+    def load_image(filename: str) -> Union["PIL.Image.Image", "wand.image.Image"]:
         if wand is not None:
             return wand.image.Image(filename=filename)
         elif PIL_IMPORTED:

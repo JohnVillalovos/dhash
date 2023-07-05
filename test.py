@@ -1,33 +1,36 @@
-from io import BytesIO
-from os import path
-from unittest import TestCase
+import io
+import os
+import unittest
+from typing import Union
 
-import wand.image
+import wand.image  # type: ignore[import]
 from PIL import Image as PilImage
 from PIL import ImageDraw as PilDraw
 
 import dhash
 
-IMGDIR = path.dirname(__file__)
+IMGDIR = os.path.dirname(__file__)
 
 
-def pil_to_wand(image, format="png"):
-    with BytesIO() as fd:
+def pil_to_wand(image: PilImage.Image, format: str = "png") -> "wand.image.Image":
+    with io.BytesIO() as fd:
         image.save(fd, format=format)
         fd.seek(0)
         return wand.image.Image(file=fd)
 
 
-class TestDHash(TestCase):
-    def test_get_grays_pil(self):
-        with PilImage.open(path.join(IMGDIR, "dhash-test.jpg")) as image:
+class TestDHash(unittest.TestCase):
+    def test_get_grays_pil(self) -> None:
+        with PilImage.open(os.path.join(IMGDIR, "dhash-test.jpg")) as image:
             self._test_get_grays(image, delta=1)
 
-    def test_get_grays_wand(self):
-        image = wand.image.Image(filename=path.join(IMGDIR, "dhash-test.jpg"))
+    def test_get_grays_wand(self) -> None:
+        image = wand.image.Image(filename=os.path.join(IMGDIR, "dhash-test.jpg"))
         self._test_get_grays(image, delta=2)
 
-    def _test_get_grays(self, image, delta):
+    def _test_get_grays(
+        self, image: Union[PilImage.Image, "wand.image.Image"], delta: int
+    ) -> None:
         result = dhash.get_grays(image, 9, 9)[:18]
 
         expected = [
@@ -39,15 +42,19 @@ class TestDHash(TestCase):
         for r, e in zip(result, expected):
             self.assertAlmostEqual(r, e, delta=delta)
 
-    def test_fill_transparency(self):
+    def test_fill_transparency(self) -> None:
         "Ensure transparent colors in PIL Images are ignored in hashes"
 
         # grayscale image, completely white and also completely transparent
-        im1 = PilImage.new("LA", (100, 100), (0xFF, 0))
+        # FIXME(jlvillal): Ignore type issue until PR merged:
+        # https://github.com/python/typeshed/pull/10406
+        im1 = PilImage.new(mode="LA", size=(100, 100), color=(0xFF, 0))  # type: ignore[arg-type]
 
         im2 = im1.copy()
         # replace most of it with "transparent black"
-        PilDraw.Draw(im2).rectangle((10, 10, 90, 90), (0, 0))
+        # FIXME(jlvillal): Ignore type issue until PR merged:
+        # https://github.com/python/typeshed/pull/10406
+        PilDraw.Draw(im2).rectangle(xy=(10, 10, 90, 90), fill=(0, 0))  # type: ignore[arg-type]
 
         self.assertEqual(dhash.dhash_row_col(im1), dhash.dhash_row_col(im2))
 
@@ -57,6 +64,4 @@ class TestDHash(TestCase):
 
 
 if __name__ == "__main__":
-    import unittest
-
     unittest.main()
