@@ -3,16 +3,16 @@ import os
 import unittest
 from typing import Union
 
+import PIL
+import PIL.ImageDraw
 import wand.image  # type: ignore[import]
-from PIL import Image as PilImage
-from PIL import ImageDraw as PilDraw
 
 import dhash
 
 IMGDIR = os.path.dirname(__file__)
 
 
-def pil_to_wand(image: PilImage.Image, format: str = "png") -> "wand.image.Image":
+def pil_to_wand(image: PIL.Image.Image, format: str = "png") -> wand.image.Image:
     with io.BytesIO() as fd:
         image.save(fd, format=format)
         fd.seek(0)
@@ -21,7 +21,7 @@ def pil_to_wand(image: PilImage.Image, format: str = "png") -> "wand.image.Image
 
 class TestDHash(unittest.TestCase):
     def test_get_grays_pil(self) -> None:
-        with PilImage.open(os.path.join(IMGDIR, "dhash-test.jpg")) as image:
+        with PIL.Image.open(os.path.join(IMGDIR, "dhash-test.jpg")) as image:
             self._test_get_grays(image, delta=1)
 
     def test_get_grays_wand(self) -> None:
@@ -29,7 +29,7 @@ class TestDHash(unittest.TestCase):
         self._test_get_grays(image, delta=2)
 
     def _test_get_grays(
-        self, image: Union[PilImage.Image, "wand.image.Image"], delta: int
+        self, image: Union[PIL.Image.Image, wand.image.Image], delta: int
     ) -> None:
         result = dhash.get_grays(image, 9, 9)[:18]
 
@@ -48,13 +48,13 @@ class TestDHash(unittest.TestCase):
         # grayscale image, completely white and also completely transparent
         # FIXME(jlvillal): Ignore type issue until PR merged:
         # https://github.com/python/typeshed/pull/10406
-        im1 = PilImage.new(mode="LA", size=(100, 100), color=(0xFF, 0))  # type: ignore[arg-type]
+        im1 = PIL.Image.new(mode="LA", size=(100, 100), color=(0xFF, 0))  # type: ignore[arg-type]
 
         im2 = im1.copy()
         # replace most of it with "transparent black"
         # FIXME(jlvillal): Ignore type issue until PR merged:
         # https://github.com/python/typeshed/pull/10406
-        PilDraw.Draw(im2).rectangle(xy=(10, 10, 90, 90), fill=(0, 0))  # type: ignore[arg-type]
+        PIL.ImageDraw.Draw(im2).rectangle(xy=(10, 10, 90, 90), fill=(0, 0))  # type: ignore[arg-type]
 
         self.assertEqual(dhash.dhash_row_col(im1), dhash.dhash_row_col(im2))
 
