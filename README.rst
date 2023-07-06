@@ -5,8 +5,8 @@ dhash
    :target: https://pypi.org/project/dhash/
    :alt: dhash on PyPI (Python Package Index)
 
-.. image:: https://github.com/benhoyt/dhash/actions/workflows/ci.yml/badge.svg
-   :target: https://github.com/benhoyt/dhash/actions/workflows/ci.yml
+.. image:: https://github.com/JohnVillalovos/dhash/actions/workflows/ci.yml/badge.svg
+   :target: https://github.com/benhoyt/JohnVillalovos/actions/workflows/ci.yml
    :alt: GitHub Actions Tests
 
 dhash is a Python library that generates a "difference hash" for a given image
